@@ -30338,3 +30338,14 @@ const canvas = document.getElementById('three-canvas');
 const renderer = new WebGLRenderer( { canvas });
 renderer.setSize(sizes.width, sizes.height);
 renderer.render(scene, camera);
+
+
+function animate() {
+    mesh.rotation.x += 0.01;
+    mesh.rotation.z += 0.01;
+    
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate);
+}
+
+animate();
