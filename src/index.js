@@ -9,6 +9,7 @@ import {
 
 // 1 The scene
 const scene = new Scene();
+const canvas = document.getElementById('three-canvas');
 
 // 2 The objects
 const geometry = new BoxGeometry(0.5, 0.5, 0.5);
@@ -25,20 +26,26 @@ greenCube.position.x -= 1;
 scene.add(orangeCube, bigBlueCube, greenCube);
 
 // 3 The camera
-const sizes = {
-    width: 800,
-    height: 600
-};
 
-const camera = new PerspectiveCamera(75, sizes.width/sizes.height);
+const camera = new PerspectiveCamera(75, canvas.clientWidth/canvas.clientHeight);
 scene.add(camera);
 camera.position.z = 3;
 
 // 4 The renderer
-const canvas = document.getElementById('three-canvas');
 const renderer = new WebGLRenderer( { canvas });
-renderer.setSize(sizes.width, sizes.height, false);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
 
+// 5 Responsivity
+
+window.addEventListener('resize', () => {
+    camera.aspect = canvas.clientWidth / canvas.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+}
+)
+
+//6 Animation
 
 function animate() {
     orangeCube.rotation.x += 0.01;
