@@ -30343,8 +30343,7 @@ camera.position.z = 3;
 // 4 The renderer
 const canvas = document.getElementById('three-canvas');
 const renderer = new WebGLRenderer( { canvas });
-renderer.setSize(sizes.width, sizes.height);
-renderer.render(scene, camera);
+renderer.setSize(sizes.width, sizes.height, false);
 
 
 function animate() {
