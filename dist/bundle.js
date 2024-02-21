@@ -30337,6 +30337,25 @@ const camera = new PerspectiveCamera(75, canvas.clientWidth/canvas.clientHeight)
 scene.add(camera);
 camera.position.z = 3;
 
+window.addEventListener('mousemove', (event) => {
+    const position = getMousePosition(event);
+    camera.position.x = Math.sin(position.x * Math.PI * 2) * 2;
+    camera.position.z = Math.cos(position.x * Math.PI * 2) * 2;
+    camera.position.y = position.y * 3;
+    camera.lookAt(orangeCube.position);
+});
+
+function getMousePosition(event) {
+    const position = new Vector2();
+    const bounds = canvas.getBoundingClientRect();
+
+    position.x = ((event.clientX - bounds.left) / (bounds.right - bounds.left)) * 2 - 1;
+    position.y = -((event.clientY - bounds.top) / (bounds.bottom - bounds.top)) * 2 + 1;
+    
+    
+    return position;
+}
+
 // 4 The renderer
 const renderer = new WebGLRenderer( { canvas });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -30348,8 +30367,7 @@ window.addEventListener('resize', () => {
     camera.aspect = canvas.clientWidth / canvas.clientHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
-}
-);
+});
 
 //6 Animation
 
