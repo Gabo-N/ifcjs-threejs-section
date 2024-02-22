@@ -8,6 +8,8 @@ import {
     Vector2
 } from 'three';
 
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+
 // 1 The scene
 const scene = new Scene();
 const canvas = document.getElementById('three-canvas');
@@ -32,25 +34,6 @@ const camera = new PerspectiveCamera(75, canvas.clientWidth/canvas.clientHeight)
 scene.add(camera);
 camera.position.z = 3;
 
-window.addEventListener('mousemove', (event) => {
-    const position = getMousePosition(event);
-    camera.position.x = Math.sin(position.x * Math.PI * 2) * 2;
-    camera.position.z = Math.cos(position.x * Math.PI * 2) * 2;
-    camera.position.y = position.y * 3;
-    camera.lookAt(orangeCube.position);
-})
-
-function getMousePosition(event) {
-    const position = new Vector2();
-    const bounds = canvas.getBoundingClientRect();
-
-    position.x = ((event.clientX - bounds.left) / (bounds.right - bounds.left)) * 2 - 1;
-    position.y = -((event.clientY - bounds.top) / (bounds.bottom - bounds.top)) * 2 + 1;
-    
-    
-    return position;
-}
-
 // 4 The renderer
 const renderer = new WebGLRenderer( { canvas });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -64,17 +47,15 @@ window.addEventListener('resize', () => {
     renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
 })
 
-//6 Animation
+// 6 Controls
+
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+
+// 7 Animation
 
 function animate() {
-    orangeCube.rotation.x += 0.01;
-    orangeCube.rotation.z += 0.01;
-    
-    bigBlueCube.rotation.x -= 0.02;
-    bigBlueCube.rotation.z -= 0.02;
-    
-    greenCube.rotation.x += 0.02;
-    greenCube.rotation.z += 0.02;
+    controls.update();
     
     renderer.render(scene, camera);
     requestAnimationFrame(animate);
