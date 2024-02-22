@@ -5,10 +5,21 @@ import {
     Mesh,
     PerspectiveCamera,
     WebGLRenderer,
-    Vector2
+    MOUSE,
+    Vector2,
+    Vector3,
+    Vector4,
+    Quaternion,
+    Matrix4,
+    Spherical,
+    Box3,
+    Sphere,
+    Raycaster,
+    MathUtils,
+    Clock
 } from 'three';
+import CameraControls from 'camera-controls';
 
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 // 1 The scene
 const scene = new Scene();
@@ -49,15 +60,36 @@ window.addEventListener('resize', () => {
 
 // 6 Controls
 
-const controls = new OrbitControls(camera, canvas);
-controls.enableDamping = true;
+const subsetOfTHREE = {
+    MOUSE,
+    Vector2,
+    Vector3,
+    Vector4,
+    Quaternion,
+    Matrix4,
+    Spherical,
+    Box3,
+    Sphere,
+    Raycaster,
+    MathUtils: {
+        DEG2RAD: MathUtils.DEG2RAD,
+        clamp: MathUtils.clamp
+    }
+};
+
+CameraControls.install( { THREE: subsetOfTHREE } );
+const clock = new Clock();
+const cameraControls = new CameraControls(camera, canvas);
+
+cameraControls.dollyToCursor = true;
+
 
 // 7 Animation
 
 function animate() {
-    controls.update();
-    
-    renderer.render(scene, camera);
+    const delta = clock.getDelta();
+	cameraControls.update( delta );
+	renderer.render( scene, camera );
     requestAnimationFrame(animate);
 }
 
