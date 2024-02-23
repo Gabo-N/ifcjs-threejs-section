@@ -16,10 +16,11 @@ import {
     Sphere,
     Raycaster,
     MathUtils,
+    Clock,
     MeshLambertMaterial,
     MeshPhongMaterial,
     DirectionalLight,
-    Clock
+    TextureLoader
 } from 'three';
 import CameraControls from 'camera-controls';
 
@@ -29,9 +30,18 @@ const scene = new Scene();
 const canvas = document.getElementById('three-canvas');
 
 // 2 The objects
+
+const loader = new TextureLoader();
+
 const geometry = new BoxGeometry(0.5, 0.5, 0.5);
-const orangeMaterial = new MeshLambertMaterial({color: 'orange'});
-const blueMaterial = new MeshBasicMaterial({color: 'blue'});
+const orangeMaterial = new MeshLambertMaterial({
+    color: 'orange',
+    map: loader.load('../assets/sample.png')
+});
+const blueMaterial = new MeshLambertMaterial({
+    color: 'blue',
+    map: loader.load('../assets/sample.jpg')
+});
 const greenMaterial = new MeshPhongMaterial({
     color: 'green',
     specular: 0xffffff,
