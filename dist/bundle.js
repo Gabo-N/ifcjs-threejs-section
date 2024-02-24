@@ -30493,62 +30493,117 @@ class Scene extends Object3D {
 
 }
 
-class MeshPhongMaterial extends Material {
+class SphereGeometry extends BufferGeometry {
 
-	constructor( parameters ) {
+	constructor( radius = 1, widthSegments = 32, heightSegments = 16, phiStart = 0, phiLength = Math.PI * 2, thetaStart = 0, thetaLength = Math.PI ) {
 
 		super();
 
-		this.isMeshPhongMaterial = true;
+		this.type = 'SphereGeometry';
 
-		this.type = 'MeshPhongMaterial';
+		this.parameters = {
+			radius: radius,
+			widthSegments: widthSegments,
+			heightSegments: heightSegments,
+			phiStart: phiStart,
+			phiLength: phiLength,
+			thetaStart: thetaStart,
+			thetaLength: thetaLength
+		};
 
-		this.color = new Color( 0xffffff ); // diffuse
-		this.specular = new Color( 0x111111 );
-		this.shininess = 30;
+		widthSegments = Math.max( 3, Math.floor( widthSegments ) );
+		heightSegments = Math.max( 2, Math.floor( heightSegments ) );
 
-		this.map = null;
+		const thetaEnd = Math.min( thetaStart + thetaLength, Math.PI );
 
-		this.lightMap = null;
-		this.lightMapIntensity = 1.0;
+		let index = 0;
+		const grid = [];
 
-		this.aoMap = null;
-		this.aoMapIntensity = 1.0;
+		const vertex = new Vector3();
+		const normal = new Vector3();
 
-		this.emissive = new Color( 0x000000 );
-		this.emissiveIntensity = 1.0;
-		this.emissiveMap = null;
+		// buffers
 
-		this.bumpMap = null;
-		this.bumpScale = 1;
+		const indices = [];
+		const vertices = [];
+		const normals = [];
+		const uvs = [];
 
-		this.normalMap = null;
-		this.normalMapType = TangentSpaceNormalMap;
-		this.normalScale = new Vector2( 1, 1 );
+		// generate vertices, normals and uvs
 
-		this.displacementMap = null;
-		this.displacementScale = 1;
-		this.displacementBias = 0;
+		for ( let iy = 0; iy <= heightSegments; iy ++ ) {
 
-		this.specularMap = null;
+			const verticesRow = [];
 
-		this.alphaMap = null;
+			const v = iy / heightSegments;
 
-		this.envMap = null;
-		this.combine = MultiplyOperation;
-		this.reflectivity = 1;
-		this.refractionRatio = 0.98;
+			// special case for the poles
 
-		this.wireframe = false;
-		this.wireframeLinewidth = 1;
-		this.wireframeLinecap = 'round';
-		this.wireframeLinejoin = 'round';
+			let uOffset = 0;
 
-		this.flatShading = false;
+			if ( iy === 0 && thetaStart === 0 ) {
 
-		this.fog = true;
+				uOffset = 0.5 / widthSegments;
 
-		this.setValues( parameters );
+			} else if ( iy === heightSegments && thetaEnd === Math.PI ) {
+
+				uOffset = - 0.5 / widthSegments;
+
+			}
+
+			for ( let ix = 0; ix <= widthSegments; ix ++ ) {
+
+				const u = ix / widthSegments;
+
+				// vertex
+
+				vertex.x = - radius * Math.cos( phiStart + u * phiLength ) * Math.sin( thetaStart + v * thetaLength );
+				vertex.y = radius * Math.cos( thetaStart + v * thetaLength );
+				vertex.z = radius * Math.sin( phiStart + u * phiLength ) * Math.sin( thetaStart + v * thetaLength );
+
+				vertices.push( vertex.x, vertex.y, vertex.z );
+
+				// normal
+
+				normal.copy( vertex ).normalize();
+				normals.push( normal.x, normal.y, normal.z );
+
+				// uv
+
+				uvs.push( u + uOffset, 1 - v );
+
+				verticesRow.push( index ++ );
+
+			}
+
+			grid.push( verticesRow );
+
+		}
+
+		// indices
+
+		for ( let iy = 0; iy < heightSegments; iy ++ ) {
+
+			for ( let ix = 0; ix < widthSegments; ix ++ ) {
+
+				const a = grid[ iy ][ ix + 1 ];
+				const b = grid[ iy ][ ix ];
+				const c = grid[ iy + 1 ][ ix ];
+				const d = grid[ iy + 1 ][ ix + 1 ];
+
+				if ( iy !== 0 || thetaStart > 0 ) indices.push( a, b, d );
+				if ( iy !== heightSegments - 1 || thetaEnd < Math.PI ) indices.push( b, c, d );
+
+			}
+
+		}
+
+		// build geometry
+
+		this.setIndex( indices );
+		this.setAttribute( 'position', new Float32BufferAttribute( vertices, 3 ) );
+		this.setAttribute( 'normal', new Float32BufferAttribute( normals, 3 ) );
+		this.setAttribute( 'uv', new Float32BufferAttribute( uvs, 2 ) );
 
 	}
 
@@ -30556,52 +30611,15 @@ class MeshPhongMaterial extends Material {
 
 		super.copy( source );
 
-		this.color.copy( source.color );
-		this.specular.copy( source.specular );
-		this.shininess = source.shininess;
-
-		this.map = source.map;
-
-		this.lightMap = source.lightMap;
-		this.lightMapIntensity = source.lightMapIntensity;
-
-		this.aoMap = source.aoMap;
-		this.aoMapIntensity = source.aoMapIntensity;
-
-		this.emissive.copy( source.emissive );
-		this.emissiveMap = source.emissiveMap;
-		this.emissiveIntensity = source.emissiveIntensity;
-
-		this.bumpMap = source.bumpMap;
-		this.bumpScale = source.bumpScale;
-
-		this.normalMap = source.normalMap;
-		this.normalMapType = source.normalMapType;
-		this.normalScale.copy( source.normalScale );
-
-		this.displacementMap = source.displacementMap;
-		this.displacementScale = source.displacementScale;
-		this.displacementBias = source.displacementBias;
-
-		this.specularMap = source.specularMap;
-
-		this.alphaMap = source.alphaMap;
-
-		this.envMap = source.envMap;
-		this.combine = source.combine;
-		this.reflectivity = source.reflectivity;
-		this.refractionRatio = source.refractionRatio;
-
-		this.wireframe = source.wireframe;
-		this.wireframeLinewidth = source.wireframeLinewidth;
-		this.wireframeLinecap = source.wireframeLinecap;
-		this.wireframeLinejoin = source.wireframeLinejoin;
-
-		this.flatShading = source.flatShading;
-
-		this.fog = source.fog;
+		this.parameters = Object.assign( {}, source.parameters );
 
 		return this;
+
+	}
+
+	static fromJSON( data ) {
+
+		return new SphereGeometry( data.radius, data.widthSegments, data.heightSegments, data.phiStart, data.phiLength, data.thetaStart, data.thetaLength );
 
 	}
 
@@ -31136,35 +31154,6 @@ class Light extends Object3D {
 		if ( this.shadow !== undefined ) data.object.shadow = this.shadow.toJSON();
 
 		return data;
-
-	}
-
-}
-
-class HemisphereLight extends Light {
-
-	constructor( skyColor, groundColor, intensity ) {
-
-		super( skyColor, intensity );
-
-		this.isHemisphereLight = true;
-
-		this.type = 'HemisphereLight';
-
-		this.position.copy( Object3D.DEFAULT_UP );
-		this.updateMatrix();
-
-		this.groundColor = new Color( groundColor );
-
-	}
-
-	copy( source, recursive ) {
-
-		super.copy( source, recursive );
-
-		this.groundColor.copy( source.groundColor );
-
-		return this;
 
 	}
 
@@ -34174,36 +34163,34 @@ const canvas = document.getElementById('three-canvas');
 
 // 2 The objects
 
-const loader = new TextureLoader();
+new TextureLoader();
 
-const geometry = new BoxGeometry(0.5, 0.5, 0.5);
-const orangeMaterial = new MeshLambertMaterial({
-    color: 'orange',
-    map: loader.load('../assets/sample.jpg')
+const geometry = new SphereGeometry(0.5);
+
+const sunMaterial = new MeshLambertMaterial({
+    color: 'yellow',
 });
-const blueMaterial = new MeshLambertMaterial({
+const earthMaterial = new MeshLambertMaterial({
     color: 'blue',
 });
-const greenMaterial = new MeshPhongMaterial({
-    color: 'green',
-    specular: 0xffffff,
-    shininess: 100,
-    flatShading: true
-});
-const whiteMaterial = new MeshLambertMaterial({
+const moonMaterial = new MeshLambertMaterial({
     color: 'white',
 });
-const orangeCube = new Mesh(geometry, orangeMaterial);
-const bigBlueCube = new Mesh(geometry, blueMaterial);
-const greenCube = new Mesh(geometry, greenMaterial);
-const whiteCube = new Mesh(geometry, whiteMaterial);
-bigBlueCube.position.x += 1.5;
-bigBlueCube.scale.set(2, 2, 2);
-greenCube.position.x -= 1;
-whiteCube.position.x -= 2;
 
-scene.add(orangeCube, bigBlueCube, greenCube);
-scene.add(whiteCube);
+const sunMesh = new Mesh(geometry, sunMaterial);
+scene.add(sunMesh);
+
+const earthMesh = new Mesh(geometry, earthMaterial);
+earthMesh.scale.set(.2, .2, .2);
+earthMesh.position.x += 2;
+sunMesh.add(earthMesh);
+
+const moonMesh = new Mesh(geometry, moonMaterial);
+moonMesh.scale.set(.4, .4, .4);
+moonMesh.position.x += 1;
+earthMesh.add(moonMesh);
+
+
 
 // 3 The camera
 
@@ -34221,15 +34208,15 @@ renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
 const light1 = new DirectionalLight();
 light1.position.set(3, 2, 1).normalize();
 scene.add(light1);
-const light2 = new DirectionalLight();
-light2.position.set(-3, 2, -1).normalize();
-scene.add(light2);
+// const light2 = new DirectionalLight();
+// light2.position.set(-3, 2, -1).normalize();
+// scene.add(light2);
 
 const ambientLight = new AmbientLight(0xffffff, .2);
 scene.add(ambientLight);
 
-const hemisphereLight = new HemisphereLight(0xffffff, 0x7075ff, .2);
-scene.add(hemisphereLight);
+// const hemisphereLight = new HemisphereLight(0xffffff, 0x7075ff, .2);
+// scene.add(hemisphereLight);
 
 // 6 Responsivity
 
@@ -34270,6 +34257,10 @@ cameraControls.dollyToCursor = true;
 function animate() {
     const delta = clock.getDelta();
 	cameraControls.update( delta );
+    
+    sunMesh.rotation.y += .01;
+    earthMesh.rotation.y += .05;
+    
 	renderer.render( scene, camera );
     requestAnimationFrame(animate);
 }

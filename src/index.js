@@ -22,7 +22,8 @@ import {
     DirectionalLight,
     TextureLoader,
     AmbientLight,
-    HemisphereLight
+    HemisphereLight,
+    SphereGeometry
 } from 'three';
 import CameraControls from 'camera-controls';
 
@@ -35,34 +36,32 @@ const canvas = document.getElementById('three-canvas');
 
 const loader = new TextureLoader();
 
-const geometry = new BoxGeometry(0.5, 0.5, 0.5);
-const orangeMaterial = new MeshLambertMaterial({
-    color: 'orange',
-    map: loader.load('../assets/sample.jpg')
+const geometry = new SphereGeometry(0.5);
+
+const sunMaterial = new MeshLambertMaterial({
+    color: 'yellow',
 });
-const blueMaterial = new MeshLambertMaterial({
+const earthMaterial = new MeshLambertMaterial({
     color: 'blue',
 });
-const greenMaterial = new MeshPhongMaterial({
-    color: 'green',
-    specular: 0xffffff,
-    shininess: 100,
-    flatShading: true
-});
-const whiteMaterial = new MeshLambertMaterial({
+const moonMaterial = new MeshLambertMaterial({
     color: 'white',
 });
-const orangeCube = new Mesh(geometry, orangeMaterial);
-const bigBlueCube = new Mesh(geometry, blueMaterial);
-const greenCube = new Mesh(geometry, greenMaterial);
-const whiteCube = new Mesh(geometry, whiteMaterial);
-bigBlueCube.position.x += 1.5;
-bigBlueCube.scale.set(2, 2, 2);
-greenCube.position.x -= 1;
-whiteCube.position.x -= 2;
 
-scene.add(orangeCube, bigBlueCube, greenCube);
-scene.add(whiteCube);
+const sunMesh = new Mesh(geometry, sunMaterial);
+scene.add(sunMesh);
+
+const earthMesh = new Mesh(geometry, earthMaterial);
+earthMesh.scale.set(.2, .2, .2);
+earthMesh.position.x += 2;
+sunMesh.add(earthMesh);
+
+const moonMesh = new Mesh(geometry, moonMaterial);
+moonMesh.scale.set(.4, .4, .4);
+moonMesh.position.x += 1;
+earthMesh.add(moonMesh);
+
+
 
 // 3 The camera
 
@@ -80,15 +79,15 @@ renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
 const light1 = new DirectionalLight();
 light1.position.set(3, 2, 1).normalize();
 scene.add(light1);
-const light2 = new DirectionalLight();
-light2.position.set(-3, 2, -1).normalize();
-scene.add(light2);
+// const light2 = new DirectionalLight();
+// light2.position.set(-3, 2, -1).normalize();
+// scene.add(light2);
 
 const ambientLight = new AmbientLight(0xffffff, .2);
 scene.add(ambientLight);
 
-const hemisphereLight = new HemisphereLight(0xffffff, 0x7075ff, .2);
-scene.add(hemisphereLight);
+// const hemisphereLight = new HemisphereLight(0xffffff, 0x7075ff, .2);
+// scene.add(hemisphereLight);
 
 // 6 Responsivity
 
@@ -129,6 +128,10 @@ cameraControls.dollyToCursor = true;
 function animate() {
     const delta = clock.getDelta();
 	cameraControls.update( delta );
+    
+    sunMesh.rotation.y += .01;
+    earthMesh.rotation.y += .05;
+    
 	renderer.render( scene, camera );
     requestAnimationFrame(animate);
 }
