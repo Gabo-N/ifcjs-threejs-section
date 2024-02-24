@@ -31141,6 +31141,35 @@ class Light extends Object3D {
 
 }
 
+class HemisphereLight extends Light {
+
+	constructor( skyColor, groundColor, intensity ) {
+
+		super( skyColor, intensity );
+
+		this.isHemisphereLight = true;
+
+		this.type = 'HemisphereLight';
+
+		this.position.copy( Object3D.DEFAULT_UP );
+		this.updateMatrix();
+
+		this.groundColor = new Color( groundColor );
+
+	}
+
+	copy( source, recursive ) {
+
+		super.copy( source, recursive );
+
+		this.groundColor.copy( source.groundColor );
+
+		return this;
+
+	}
+
+}
+
 const _projScreenMatrix$1 = /*@__PURE__*/ new Matrix4();
 const _lightPositionWorld$1 = /*@__PURE__*/ new Vector3();
 const _lookTarget$1 = /*@__PURE__*/ new Vector3();
@@ -31326,6 +31355,20 @@ class DirectionalLight extends Light {
 		this.shadow = source.shadow.clone();
 
 		return this;
+
+	}
+
+}
+
+class AmbientLight extends Light {
+
+	constructor( color, intensity ) {
+
+		super( color, intensity );
+
+		this.isAmbientLight = true;
+
+		this.type = 'AmbientLight';
 
 	}
 
@@ -34136,11 +34179,10 @@ const loader = new TextureLoader();
 const geometry = new BoxGeometry(0.5, 0.5, 0.5);
 const orangeMaterial = new MeshLambertMaterial({
     color: 'orange',
-    map: loader.load('../assets/sample.png')
+    map: loader.load('../assets/sample.jpg')
 });
 const blueMaterial = new MeshLambertMaterial({
     color: 'blue',
-    map: loader.load('../assets/sample.jpg')
 });
 const greenMaterial = new MeshPhongMaterial({
     color: 'green',
@@ -34148,14 +34190,20 @@ const greenMaterial = new MeshPhongMaterial({
     shininess: 100,
     flatShading: true
 });
+const whiteMaterial = new MeshLambertMaterial({
+    color: 'white',
+});
 const orangeCube = new Mesh(geometry, orangeMaterial);
 const bigBlueCube = new Mesh(geometry, blueMaterial);
 const greenCube = new Mesh(geometry, greenMaterial);
+const whiteCube = new Mesh(geometry, whiteMaterial);
 bigBlueCube.position.x += 1.5;
 bigBlueCube.scale.set(2, 2, 2);
 greenCube.position.x -= 1;
+whiteCube.position.x -= 2;
 
 scene.add(orangeCube, bigBlueCube, greenCube);
+scene.add(whiteCube);
 
 // 3 The camera
 
@@ -34176,6 +34224,12 @@ scene.add(light1);
 const light2 = new DirectionalLight();
 light2.position.set(-3, 2, -1).normalize();
 scene.add(light2);
+
+const ambientLight = new AmbientLight(0xffffff, .2);
+scene.add(ambientLight);
+
+const hemisphereLight = new HemisphereLight(0xffffff, 0x7075ff, .2);
+scene.add(hemisphereLight);
 
 // 6 Responsivity
 
