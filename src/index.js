@@ -23,7 +23,9 @@ import {
     TextureLoader,
     AmbientLight,
     HemisphereLight,
-    SphereGeometry
+    SphereGeometry,
+    AxesHelper,
+    GridHelper
 } from 'three';
 import CameraControls from 'camera-controls';
 
@@ -31,6 +33,15 @@ import CameraControls from 'camera-controls';
 // 1 The scene
 const scene = new Scene();
 const canvas = document.getElementById('three-canvas');
+
+const axes = new AxesHelper();
+axes.material.depthTest = false;
+axes.renderOrder = 2;
+scene.add(axes);
+
+const grid = new GridHelper();
+grid.material.depthTest = false;
+scene.add(grid);
 
 // 2 The objects
 
@@ -61,18 +72,25 @@ moonMesh.scale.set(.4, .4, .4);
 moonMesh.position.x += 1;
 earthMesh.add(moonMesh);
 
-
+const earthAxes = new AxesHelper();
+earthAxes.material.depthTest = false;
+earthAxes.renderOrder = 2;
+earthMesh.add(earthAxes);
 
 // 3 The camera
 
 const camera = new PerspectiveCamera(75, canvas.clientWidth/canvas.clientHeight);
 scene.add(camera);
-camera.position.z = 3;
+camera.position.x = 6;
+camera.position.y = 4;
+camera.position.z = 8;
+camera.lookAt(axes.position);
 
 // 4 The renderer
 const renderer = new WebGLRenderer( { canvas });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+renderer.setClearColor(0x333333, 1);
 
 // 8 Lights
 
