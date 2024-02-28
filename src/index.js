@@ -25,7 +25,13 @@ import {
     HemisphereLight,
     SphereGeometry,
     AxesHelper,
-    GridHelper
+    GridHelper,
+    PointsMaterial,
+    Points,
+    LineBasicMaterial,
+    EdgesGeometry,
+    LineSegments,
+    WireframeGeometry
 } from 'three';
 import CameraControls from 'camera-controls';
 
@@ -49,16 +55,19 @@ scene.add(grid);
 
 const loader = new TextureLoader();
 
-const geometry = new SphereGeometry(0.5);
+const radius = 0.5;
+const widthSegments = 12;
+const heightSegments = 8;
+const geometry = new SphereGeometry(radius, widthSegments, heightSegments);
 
 const sunMaterial = new MeshLambertMaterial({
-    color: 'yellow',
+    color: 'yellow'
 });
 const earthMaterial = new MeshLambertMaterial({
-    color: 'blue',
+    color: 'blue'
 });
 const moonMaterial = new MeshLambertMaterial({
-    color: 'white',
+    color: 'white'
 });
 
 const sunMesh = new Mesh(geometry, sunMaterial);
@@ -79,6 +88,39 @@ earthAxes.material.depthTest = false;
 earthAxes.renderOrder = 2;
 earthMesh.add(earthAxes);
 
+// points geometry
+const pointsMaterial = new PointsMaterial({
+	color: 'red',
+	size: 0.02, // in world units
+});
+
+const sunPoints = new Points(geometry, pointsMaterial);
+scene.add(sunPoints);
+
+
+// wireframe geometry
+const wireframeMaterial = new LineBasicMaterial({
+    color: 'green',
+    linewidth: 2
+});
+const wireframeGeometry = new WireframeGeometry(geometry);
+const earthWireframe = new LineSegments(wireframeGeometry,wireframeMaterial);
+earthWireframe.scale.set(.2, .2, .2);
+earthWireframe.position.x += 2;
+sunPoints.add(earthWireframe);
+
+
+// edges geometry
+const edgesMaterial = new LineBasicMaterial({
+    color: 'blue',
+    linewidth: 2
+});
+const edgesGeometry = new EdgesGeometry(geometry);
+const moonEdges = new LineSegments(edgesGeometry,edgesMaterial);
+moonEdges.scale.set(.4, .4, .4);
+moonEdges.position.x += 1;
+earthWireframe.add(moonEdges);
+
 // 3 The camera
 
 const camera = new PerspectiveCamera(75, canvas.clientWidth/canvas.clientHeight);
@@ -94,7 +136,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
 renderer.setClearColor(0x333333, 1);
 
-// 8 Lights
+// 5 Lights
 
 const light1 = new DirectionalLight();
 light1.position.set(3, 2, 1).normalize();
@@ -151,6 +193,8 @@ function animate() {
     
     sunMesh.rotation.y += .01;
     earthMesh.rotation.y += .05;
+    sunPoints.rotation .y += .01;
+    earthWireframe.rotation.y += .05;
     
 	renderer.render( scene, camera );
     requestAnimationFrame(animate);
@@ -168,13 +212,24 @@ const min = -3;
 const max = 3;
 const step = .01;
 
-const transformationFolder = gui.addFolder('Transforrmation');
+const transformationFolder = gui.addFolder('Transformation');
 
 transformationFolder.add(sunMesh.position, 'x', min, max, step).name('Sun Position X');
 transformationFolder.add(sunMesh.position, 'y', min, max, step).name('Sun Position Y');
 transformationFolder.add(sunMesh.position, 'z', min, max, step).name('Sun Position Z');
 
 // transformationFolder.close();
+
+const sunReset = {
+    reset: () => {
+        gsap.to(sunMesh.position, { x: sunMesh.position.x = 0, duration: .5});
+        gsap.to(sunMesh.position, { y: sunMesh.position.y = 0, duration: .5});
+        gsap.to(sunMesh.position, { z: sunMesh.position.z = 0, duration: .5});
+    }
+}
+
+gui.add(sunReset, 'reset').name('Reset Sun Position');
+
 
 // gui.addFolder('Sun Visibility').close().add(sunMesh, 'visible');
 // gui.addFolder('Earth Visibility').close().add(earthMesh, 'visible');
@@ -189,7 +244,7 @@ visibilityFolder.add(moonMesh, 'visible').name('Moon');
 // visibilityFolder.close();
 
 const colorParam = {
-    value: 0xff0000
+    value: 0xffff00
 }
 
 gui.addColor(colorParam, 'value').name('Sun Color').onChange(() => {

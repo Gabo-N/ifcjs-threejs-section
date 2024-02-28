@@ -30800,6 +30800,354 @@ class LineSegments extends Line {
 
 }
 
+class PointsMaterial extends Material {
+
+	constructor( parameters ) {
+
+		super();
+
+		this.isPointsMaterial = true;
+
+		this.type = 'PointsMaterial';
+
+		this.color = new Color( 0xffffff );
+
+		this.map = null;
+
+		this.alphaMap = null;
+
+		this.size = 1;
+		this.sizeAttenuation = true;
+
+		this.fog = true;
+
+		this.setValues( parameters );
+
+	}
+
+	copy( source ) {
+
+		super.copy( source );
+
+		this.color.copy( source.color );
+
+		this.map = source.map;
+
+		this.alphaMap = source.alphaMap;
+
+		this.size = source.size;
+		this.sizeAttenuation = source.sizeAttenuation;
+
+		this.fog = source.fog;
+
+		return this;
+
+	}
+
+}
+
+const _inverseMatrix = /*@__PURE__*/ new Matrix4();
+const _ray = /*@__PURE__*/ new Ray();
+const _sphere$2 = /*@__PURE__*/ new Sphere();
+const _position$2 = /*@__PURE__*/ new Vector3();
+
+class Points extends Object3D {
+
+	constructor( geometry = new BufferGeometry(), material = new PointsMaterial() ) {
+
+		super();
+
+		this.isPoints = true;
+
+		this.type = 'Points';
+
+		this.geometry = geometry;
+		this.material = material;
+
+		this.updateMorphTargets();
+
+	}
+
+	copy( source, recursive ) {
+
+		super.copy( source, recursive );
+
+		this.material = Array.isArray( source.material ) ? source.material.slice() : source.material;
+		this.geometry = source.geometry;
+
+		return this;
+
+	}
+
+	raycast( raycaster, intersects ) {
+
+		const geometry = this.geometry;
+		const matrixWorld = this.matrixWorld;
+		const threshold = raycaster.params.Points.threshold;
+		const drawRange = geometry.drawRange;
+
+		// Checking boundingSphere distance to ray
+
+		if ( geometry.boundingSphere === null ) geometry.computeBoundingSphere();
+
+		_sphere$2.copy( geometry.boundingSphere );
+		_sphere$2.applyMatrix4( matrixWorld );
+		_sphere$2.radius += threshold;
+
+		if ( raycaster.ray.intersectsSphere( _sphere$2 ) === false ) return;
+
+		//
+
+		_inverseMatrix.copy( matrixWorld ).invert();
+		_ray.copy( raycaster.ray ).applyMatrix4( _inverseMatrix );
+
+		const localThreshold = threshold / ( ( this.scale.x + this.scale.y + this.scale.z ) / 3 );
+		const localThresholdSq = localThreshold * localThreshold;
+
+		const index = geometry.index;
+		const attributes = geometry.attributes;
+		const positionAttribute = attributes.position;
+
+		if ( index !== null ) {
+
+			const start = Math.max( 0, drawRange.start );
+			const end = Math.min( index.count, ( drawRange.start + drawRange.count ) );
+
+			for ( let i = start, il = end; i < il; i ++ ) {
+
+				const a = index.getX( i );
+
+				_position$2.fromBufferAttribute( positionAttribute, a );
+
+				testPoint( _position$2, a, localThresholdSq, matrixWorld, raycaster, intersects, this );
+
+			}
+
+		} else {
+
+			const start = Math.max( 0, drawRange.start );
+			const end = Math.min( positionAttribute.count, ( drawRange.start + drawRange.count ) );
+
+			for ( let i = start, l = end; i < l; i ++ ) {
+
+				_position$2.fromBufferAttribute( positionAttribute, i );
+
+				testPoint( _position$2, i, localThresholdSq, matrixWorld, raycaster, intersects, this );
+
+			}
+
+		}
+
+	}
+
+	updateMorphTargets() {
+
+		const geometry = this.geometry;
+
+		const morphAttributes = geometry.morphAttributes;
+		const keys = Object.keys( morphAttributes );
+
+		if ( keys.length > 0 ) {
+
+			const morphAttribute = morphAttributes[ keys[ 0 ] ];
+
+			if ( morphAttribute !== undefined ) {
+
+				this.morphTargetInfluences = [];
+				this.morphTargetDictionary = {};
+
+				for ( let m = 0, ml = morphAttribute.length; m < ml; m ++ ) {
+
+					const name = morphAttribute[ m ].name || String( m );
+
+					this.morphTargetInfluences.push( 0 );
+					this.morphTargetDictionary[ name ] = m;
+
+				}
+
+			}
+
+		}
+
+	}
+
+}
+
+function testPoint( point, index, localThresholdSq, matrixWorld, raycaster, intersects, object ) {
+
+	const rayPointDistanceSq = _ray.distanceSqToPoint( point );
+
+	if ( rayPointDistanceSq < localThresholdSq ) {
+
+		const intersectPoint = new Vector3();
+
+		_ray.closestPointToPoint( point, intersectPoint );
+		intersectPoint.applyMatrix4( matrixWorld );
+
+		const distance = raycaster.ray.origin.distanceTo( intersectPoint );
+
+		if ( distance < raycaster.near || distance > raycaster.far ) return;
+
+		intersects.push( {
+
+			distance: distance,
+			distanceToRay: Math.sqrt( rayPointDistanceSq ),
+			point: intersectPoint,
+			index: index,
+			face: null,
+			object: object
+
+		} );
+
+	}
+
+}
+
+const _v0 = /*@__PURE__*/ new Vector3();
+const _v1$1 = /*@__PURE__*/ new Vector3();
+const _normal = /*@__PURE__*/ new Vector3();
+const _triangle = /*@__PURE__*/ new Triangle();
+
+class EdgesGeometry extends BufferGeometry {
+
+	constructor( geometry = null, thresholdAngle = 1 ) {
+
+		super();
+
+		this.type = 'EdgesGeometry';
+
+		this.parameters = {
+			geometry: geometry,
+			thresholdAngle: thresholdAngle
+		};
+
+		if ( geometry !== null ) {
+
+			const precisionPoints = 4;
+			const precision = Math.pow( 10, precisionPoints );
+			const thresholdDot = Math.cos( DEG2RAD$1 * thresholdAngle );
+
+			const indexAttr = geometry.getIndex();
+			const positionAttr = geometry.getAttribute( 'position' );
+			const indexCount = indexAttr ? indexAttr.count : positionAttr.count;
+
+			const indexArr = [ 0, 0, 0 ];
+			const vertKeys = [ 'a', 'b', 'c' ];
+			const hashes = new Array( 3 );
+
+			const edgeData = {};
+			const vertices = [];
+			for ( let i = 0; i < indexCount; i += 3 ) {
+
+				if ( indexAttr ) {
+
+					indexArr[ 0 ] = indexAttr.getX( i );
+					indexArr[ 1 ] = indexAttr.getX( i + 1 );
+					indexArr[ 2 ] = indexAttr.getX( i + 2 );
+
+				} else {
+
+					indexArr[ 0 ] = i;
+					indexArr[ 1 ] = i + 1;
+					indexArr[ 2 ] = i + 2;
+
+				}
+
+				const { a, b, c } = _triangle;
+				a.fromBufferAttribute( positionAttr, indexArr[ 0 ] );
+				b.fromBufferAttribute( positionAttr, indexArr[ 1 ] );
+				c.fromBufferAttribute( positionAttr, indexArr[ 2 ] );
+				_triangle.getNormal( _normal );
+
+				// create hashes for the edge from the vertices
+				hashes[ 0 ] = `${ Math.round( a.x * precision ) },${ Math.round( a.y * precision ) },${ Math.round( a.z * precision ) }`;
+				hashes[ 1 ] = `${ Math.round( b.x * precision ) },${ Math.round( b.y * precision ) },${ Math.round( b.z * precision ) }`;
+				hashes[ 2 ] = `${ Math.round( c.x * precision ) },${ Math.round( c.y * precision ) },${ Math.round( c.z * precision ) }`;
+
+				// skip degenerate triangles
+				if ( hashes[ 0 ] === hashes[ 1 ] || hashes[ 1 ] === hashes[ 2 ] || hashes[ 2 ] === hashes[ 0 ] ) {
+
+					continue;
+
+				}
+
+				// iterate over every edge
+				for ( let j = 0; j < 3; j ++ ) {
+
+					// get the first and next vertex making up the edge
+					const jNext = ( j + 1 ) % 3;
+					const vecHash0 = hashes[ j ];
+					const vecHash1 = hashes[ jNext ];
+					const v0 = _triangle[ vertKeys[ j ] ];
+					const v1 = _triangle[ vertKeys[ jNext ] ];
+
+					const hash = `${ vecHash0 }_${ vecHash1 }`;
+					const reverseHash = `${ vecHash1 }_${ vecHash0 }`;
+
+					if ( reverseHash in edgeData && edgeData[ reverseHash ] ) {
+
+						// if we found a sibling edge add it into the vertex array if
+						// it meets the angle threshold and delete the edge from the map.
+						if ( _normal.dot( edgeData[ reverseHash ].normal ) <= thresholdDot ) {
+
+							vertices.push( v0.x, v0.y, v0.z );
+							vertices.push( v1.x, v1.y, v1.z );
+
+						}
+
+						edgeData[ reverseHash ] = null;
+
+					} else if ( ! ( hash in edgeData ) ) {
+
+						// if we've already got an edge here then skip adding a new one
+						edgeData[ hash ] = {
+
+							index0: indexArr[ j ],
+							index1: indexArr[ jNext ],
+							normal: _normal.clone(),
+
+						};
+
+					}
+
+				}
+
+			}
+
+			// iterate over all remaining, unmatched edges and add them to the vertex array
+			for ( const key in edgeData ) {
+
+				if ( edgeData[ key ] ) {
+
+					const { index0, index1 } = edgeData[ key ];
+					_v0.fromBufferAttribute( positionAttr, index0 );
+					_v1$1.fromBufferAttribute( positionAttr, index1 );
+
+					vertices.push( _v0.x, _v0.y, _v0.z );
+					vertices.push( _v1$1.x, _v1$1.y, _v1$1.z );
+
+				}
+
+			}
+
+			this.setAttribute( 'position', new Float32BufferAttribute( vertices, 3 ) );
+
+		}
+
+	}
+
+	copy( source ) {
+
+		super.copy( source );
+
+		this.parameters = Object.assign( {}, source.parameters );
+
+		return this;
+
+	}
+
+}
+
 class SphereGeometry extends BufferGeometry {
 
 	constructor( radius = 1, widthSegments = 32, heightSegments = 16, phiStart = 0, phiLength = Math.PI * 2, thetaStart = 0, thetaLength = Math.PI ) {
@@ -30927,6 +31275,147 @@ class SphereGeometry extends BufferGeometry {
 	static fromJSON( data ) {
 
 		return new SphereGeometry( data.radius, data.widthSegments, data.heightSegments, data.phiStart, data.phiLength, data.thetaStart, data.thetaLength );
+
+	}
+
+}
+
+class WireframeGeometry extends BufferGeometry {
+
+	constructor( geometry = null ) {
+
+		super();
+
+		this.type = 'WireframeGeometry';
+
+		this.parameters = {
+			geometry: geometry
+		};
+
+		if ( geometry !== null ) {
+
+			// buffer
+
+			const vertices = [];
+			const edges = new Set();
+
+			// helper variables
+
+			const start = new Vector3();
+			const end = new Vector3();
+
+			if ( geometry.index !== null ) {
+
+				// indexed BufferGeometry
+
+				const position = geometry.attributes.position;
+				const indices = geometry.index;
+				let groups = geometry.groups;
+
+				if ( groups.length === 0 ) {
+
+					groups = [ { start: 0, count: indices.count, materialIndex: 0 } ];
+
+				}
+
+				// create a data structure that contains all edges without duplicates
+
+				for ( let o = 0, ol = groups.length; o < ol; ++ o ) {
+
+					const group = groups[ o ];
+
+					const groupStart = group.start;
+					const groupCount = group.count;
+
+					for ( let i = groupStart, l = ( groupStart + groupCount ); i < l; i += 3 ) {
+
+						for ( let j = 0; j < 3; j ++ ) {
+
+							const index1 = indices.getX( i + j );
+							const index2 = indices.getX( i + ( j + 1 ) % 3 );
+
+							start.fromBufferAttribute( position, index1 );
+							end.fromBufferAttribute( position, index2 );
+
+							if ( isUniqueEdge( start, end, edges ) === true ) {
+
+								vertices.push( start.x, start.y, start.z );
+								vertices.push( end.x, end.y, end.z );
+
+							}
+
+						}
+
+					}
+
+				}
+
+			} else {
+
+				// non-indexed BufferGeometry
+
+				const position = geometry.attributes.position;
+
+				for ( let i = 0, l = ( position.count / 3 ); i < l; i ++ ) {
+
+					for ( let j = 0; j < 3; j ++ ) {
+
+						// three edges per triangle, an edge is represented as (index1, index2)
+						// e.g. the first triangle has the following edges: (0,1),(1,2),(2,0)
+
+						const index1 = 3 * i + j;
+						const index2 = 3 * i + ( ( j + 1 ) % 3 );
+
+						start.fromBufferAttribute( position, index1 );
+						end.fromBufferAttribute( position, index2 );
+
+						if ( isUniqueEdge( start, end, edges ) === true ) {
+
+							vertices.push( start.x, start.y, start.z );
+							vertices.push( end.x, end.y, end.z );
+
+						}
+
+					}
+
+				}
+
+			}
+
+			// build geometry
+
+			this.setAttribute( 'position', new Float32BufferAttribute( vertices, 3 ) );
+
+		}
+
+	}
+
+	copy( source ) {
+
+		super.copy( source );
+
+		this.parameters = Object.assign( {}, source.parameters );
+
+		return this;
+
+	}
+
+}
+
+function isUniqueEdge( start, end, edges ) {
+
+	const hash1 = `${start.x},${start.y},${start.z}-${end.x},${end.y},${end.z}`;
+	const hash2 = `${end.x},${end.y},${end.z}-${start.x},${start.y},${start.z}`; // coincident edge
+
+	if ( edges.has( hash1 ) === true || edges.has( hash2 ) === true ) {
+
+		return false;
+
+	} else {
+
+		edges.add( hash1 );
+		edges.add( hash2 );
+		return true;
 
 	}
 
@@ -40659,16 +41148,19 @@ scene.add(grid);
 
 new TextureLoader();
 
-const geometry = new SphereGeometry(0.5);
+const radius = 0.5;
+const widthSegments = 12;
+const heightSegments = 8;
+const geometry = new SphereGeometry(radius, widthSegments, heightSegments);
 
 const sunMaterial = new MeshLambertMaterial({
-    color: 'yellow',
+    color: 'yellow'
 });
 const earthMaterial = new MeshLambertMaterial({
-    color: 'blue',
+    color: 'blue'
 });
 const moonMaterial = new MeshLambertMaterial({
-    color: 'white',
+    color: 'white'
 });
 
 const sunMesh = new Mesh(geometry, sunMaterial);
@@ -40689,6 +41181,39 @@ earthAxes.material.depthTest = false;
 earthAxes.renderOrder = 2;
 earthMesh.add(earthAxes);
 
+// points geometry
+const pointsMaterial = new PointsMaterial({
+	color: 'red',
+	size: 0.02, // in world units
+});
+
+const sunPoints = new Points(geometry, pointsMaterial);
+scene.add(sunPoints);
+
+
+// wireframe geometry
+const wireframeMaterial = new LineBasicMaterial({
+    color: 'green',
+    linewidth: 2
+});
+const wireframeGeometry = new WireframeGeometry(geometry);
+const earthWireframe = new LineSegments(wireframeGeometry,wireframeMaterial);
+earthWireframe.scale.set(.2, .2, .2);
+earthWireframe.position.x += 2;
+sunPoints.add(earthWireframe);
+
+
+// edges geometry
+const edgesMaterial = new LineBasicMaterial({
+    color: 'blue',
+    linewidth: 2
+});
+const edgesGeometry = new EdgesGeometry(geometry);
+const moonEdges = new LineSegments(edgesGeometry,edgesMaterial);
+moonEdges.scale.set(.4, .4, .4);
+moonEdges.position.x += 1;
+earthWireframe.add(moonEdges);
+
 // 3 The camera
 
 const camera = new PerspectiveCamera(75, canvas.clientWidth/canvas.clientHeight);
@@ -40704,7 +41229,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
 renderer.setClearColor(0x333333, 1);
 
-// 8 Lights
+// 5 Lights
 
 const light1 = new DirectionalLight();
 light1.position.set(3, 2, 1).normalize();
@@ -40761,6 +41286,8 @@ function animate() {
     
     sunMesh.rotation.y += .01;
     earthMesh.rotation.y += .05;
+    sunPoints.rotation .y += .01;
+    earthWireframe.rotation.y += .05;
     
 	renderer.render( scene, camera );
     requestAnimationFrame(animate);
@@ -40778,13 +41305,24 @@ const min = -3;
 const max = 3;
 const step = .01;
 
-const transformationFolder = gui.addFolder('Transforrmation');
+const transformationFolder = gui.addFolder('Transformation');
 
 transformationFolder.add(sunMesh.position, 'x', min, max, step).name('Sun Position X');
 transformationFolder.add(sunMesh.position, 'y', min, max, step).name('Sun Position Y');
 transformationFolder.add(sunMesh.position, 'z', min, max, step).name('Sun Position Z');
 
 // transformationFolder.close();
+
+const sunReset = {
+    reset: () => {
+        gsapWithCSS.to(sunMesh.position, { x: sunMesh.position.x = 0, duration: .5});
+        gsapWithCSS.to(sunMesh.position, { y: sunMesh.position.y = 0, duration: .5});
+        gsapWithCSS.to(sunMesh.position, { z: sunMesh.position.z = 0, duration: .5});
+    }
+};
+
+gui.add(sunReset, 'reset').name('Reset Sun Position');
+
 
 // gui.addFolder('Sun Visibility').close().add(sunMesh, 'visible');
 // gui.addFolder('Earth Visibility').close().add(earthMesh, 'visible');
@@ -40799,7 +41337,7 @@ visibilityFolder.add(moonMesh, 'visible').name('Moon');
 // visibilityFolder.close();
 
 const colorParam = {
-    value: 0xff0000
+    value: 0xffff00
 };
 
 gui.addColor(colorParam, 'value').name('Sun Color').onChange(() => {
