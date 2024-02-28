@@ -64,10 +64,16 @@ const sunMaterial = new MeshLambertMaterial({
     color: 'yellow'
 });
 const earthMaterial = new MeshLambertMaterial({
-    color: 'blue'
+    color: 'blue',
+    polygonOffset: true,
+    polygonOffsetFactor: 1, 
+    polygonOffsetUnits: 1
 });
 const moonMaterial = new MeshLambertMaterial({
-    color: 'white'
+    color: 'white',
+    polygonOffset: true,
+    polygonOffsetFactor: 1, 
+    polygonOffsetUnits: 1
 });
 
 const sunMesh = new Mesh(geometry, sunMaterial);
@@ -107,7 +113,7 @@ const wireframeGeometry = new WireframeGeometry(geometry);
 const earthWireframe = new LineSegments(wireframeGeometry,wireframeMaterial);
 earthWireframe.scale.set(.2, .2, .2);
 earthWireframe.position.x += 2;
-sunPoints.add(earthWireframe);
+sunMesh.add(earthWireframe);
 
 
 // edges geometry
@@ -119,7 +125,7 @@ const edgesGeometry = new EdgesGeometry(geometry);
 const moonEdges = new LineSegments(edgesGeometry,edgesMaterial);
 moonEdges.scale.set(.4, .4, .4);
 moonEdges.position.x += 1;
-earthWireframe.add(moonEdges);
+earthMesh.add(moonEdges);
 
 // 3 The camera
 
@@ -194,7 +200,6 @@ function animate() {
     sunMesh.rotation.y += .01;
     earthMesh.rotation.y += .05;
     sunPoints.rotation .y += .01;
-    earthWireframe.rotation.y += .05;
     
 	renderer.render( scene, camera );
     requestAnimationFrame(animate);
