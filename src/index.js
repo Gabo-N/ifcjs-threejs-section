@@ -29,6 +29,8 @@ import {
 } from 'three';
 import CameraControls from 'camera-controls';
 
+import GUI from 'three/examples/jsm/libs/lil-gui.module.min.js';
+import gsap from 'gsap';
 
 // 1 The scene
 const scene = new Scene();
@@ -155,3 +157,49 @@ function animate() {
 }
 
 animate();
+
+
+// 9 Debugging
+
+
+const gui = new GUI();
+
+const min = -3;
+const max = 3;
+const step = .01;
+
+const transformationFolder = gui.addFolder('Transforrmation');
+
+transformationFolder.add(sunMesh.position, 'x', min, max, step).name('Sun Position X');
+transformationFolder.add(sunMesh.position, 'y', min, max, step).name('Sun Position Y');
+transformationFolder.add(sunMesh.position, 'z', min, max, step).name('Sun Position Z');
+
+// transformationFolder.close();
+
+// gui.addFolder('Sun Visibility').close().add(sunMesh, 'visible');
+// gui.addFolder('Earth Visibility').close().add(earthMesh, 'visible');
+// gui.addFolder('Moon Visibility').close().add(moonMesh, 'visible');
+
+const visibilityFolder = gui.addFolder('Visibility');
+
+visibilityFolder.add(sunMesh, 'visible').name('Sun');
+visibilityFolder.add(earthMesh, 'visible').name('Earth');
+visibilityFolder.add(moonMesh, 'visible').name('Moon');
+
+// visibilityFolder.close();
+
+const colorParam = {
+    value: 0xff0000
+}
+
+gui.addColor(colorParam, 'value').name('Sun Color').onChange(() => {
+    sunMesh.material.color.set(colorParam.value);
+})
+
+const functionParam = {
+    spin: () => {
+        gsap.to(earthMesh.rotation, { z: earthMesh.rotation.z + (Math.PI), duration: 1});
+    }
+}
+
+gui.add(functionParam, 'spin').name('Earth Z Spin');
