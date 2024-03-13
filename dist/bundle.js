@@ -34090,6 +34090,12 @@ const geometry = new BoxGeometry();
 const cubeMesh = new Mesh(geometry, material);
 scene.add(cubeMesh);
 
+const cubeMesh2 = new Mesh(geometry, material);
+cubeMesh2.position.x +=2;
+scene.add(cubeMesh2);
+
+const cubes = [cubeMesh, cubeMesh2];
+
 // const loader = new GLTFLoader();
 
 // const loadingElem = document.querySelector('#loader-container');
@@ -34177,27 +34183,64 @@ cameraControls.setLookAt(3, 4, 2, 0, 0, 0);
 
 const raycaster = new Raycaster();
 const mouse = new Vector2();
+const previousSelection = {
+    geometry: null,
+    material: null
+};
 
 const highlightMaterial = new MeshBasicMaterial({color: 'red'});
 
 window.addEventListener('mousemove', (event) => {
-    mouse.x = event.clientX / canvas.clientWidth *2 - 1;
-    mouse.y = -(event.clientY / canvas.clientHeight) *2 + 1;
+
+    getMousePosition(event);
     
     raycaster.setFromCamera(mouse,camera);
-    const intersections = raycaster.intersectObject(cubeMesh);
+    const intersections = raycaster.intersectObjects(cubes);
     console.log(intersections);
     
-    const hasCollided = intersections.length !==0;
     
-    if(hasCollided) {
-        cubeMesh.material = highlightMaterial;
-    }
-    else {
-        cubeMesh.material = material;        
-    }
+    if(hasNotCollisions(intersections)) {
+        restorePreviousSelection();     
+        return;
+    }    
+    const foundItem = intersections[0];
     
-    });
+    if(isPreviousSelection(foundItem)) return;
+    
+    restorePreviousSelection();    
+    savePreviousSelection(foundItem);    
+    highlightItem(foundItem);
+});
+
+function getMousePosition(event) {
+    mouse.x = event.clientX / canvas.clientWidth *2 - 1;
+    mouse.y = -(event.clientY / canvas.clientHeight) *2 + 1;
+}
+
+function hasNotCollisions(intersections) {
+    return intersections.length ===0;
+}
+
+function highlightItem(item){
+    item.object.material = highlightMaterial;
+}
+
+function isPreviousSelection(item) {
+    return previousSelection.mesh === item.object;
+}
+
+function savePreviousSelection(item) {
+    previousSelection.mesh = item.object;
+    previousSelection.material = item.object.material;
+}
+    
+function restorePreviousSelection() {
+    if(previousSelection.mesh) {
+        previousSelection.mesh.material = previousSelection.material;
+        previousSelection.mesh = null;
+        previousSelection.material = null;
+    }
+}
 
 // 9 Animation
 
