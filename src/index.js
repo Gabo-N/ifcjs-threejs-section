@@ -54,30 +54,35 @@ scene.add(grid);
 
 // 2 The objects
 
-const loader = new GLTFLoader();
+const material = new MeshLambertMaterial({color: 'orange'});
+const geometry = new BoxGeometry();
+const cubeMesh = new Mesh(geometry, material);
+scene.add(cubeMesh);
 
-const loadingElem = document.querySelector('#loader-container');
-const loadingText = loadingElem.querySelector('p');
+// const loader = new GLTFLoader();
 
-loader.load('../assets/police_station.glb',
+// const loadingElem = document.querySelector('#loader-container');
+// const loadingText = loadingElem.querySelector('p');
 
-	( gltf ) => {
-    loadingElem.style.display = 'none';
-		scene.add( gltf.scene );
-	},
+// loader.load('../assets/police_station.glb',
 
-	( progress ) => {
-    const current = (progress.loaded /  progress.total) * 100;
-    const formatted = Math.trunc(current * 100) / 100; 
-    loadingText.textContent = `Loading: ${formatted}%`;
-	},
+// 	( gltf ) => {
+//     loadingElem.style.display = 'none';
+// 		scene.add( gltf.scene );
+// 	},
 
-	( error ) => {
+// 	( progress ) => {
+//     const current = (progress.loaded /  progress.total) * 100;
+//     const formatted = Math.trunc(current * 100) / 100; 
+//     loadingText.textContent = `Loading: ${formatted}%`;
+// 	},
 
-		console.log( 'An error happened: ', error );
+// 	( error ) => {
 
-	}
-);
+// 		console.log( 'An error happened: ', error );
+
+// 	}
+// );
 
 // 3 The camera
 
@@ -134,10 +139,36 @@ const cameraControls = new CameraControls(camera, canvas);
 
 cameraControls.dollyToCursor = true;
 
-cameraControls.setLookAt(18, 20, 18, 0, 10, 0);
+// cameraControls.setLookAt(10, 20, 18, 0, 10, 0);
+cameraControls.setLookAt(3, 4, 2, 0, 0, 0);
 
+// 8 Picking
 
-// 8 Animation
+const raycaster = new Raycaster();
+const mouse = new Vector2();
+
+const highlightMaterial = new MeshBasicMaterial({color: 'red'});
+
+window.addEventListener('mousemove', (event) => {
+    mouse.x = event.clientX / canvas.clientWidth *2 - 1;
+    mouse.y = -(event.clientY / canvas.clientHeight) *2 + 1;
+    
+    raycaster.setFromCamera(mouse,camera);
+    const intersections = raycaster.intersectObject(cubeMesh);
+    console.log(intersections);
+    
+    const hasCollided = intersections.length !==0;
+    
+    if(hasCollided) {
+        cubeMesh.material = highlightMaterial;
+    }
+    else {
+        cubeMesh.material = material;        
+    }
+    
+    })
+
+// 9 Animation
 
 function animate() {
     const delta = clock.getDelta();
