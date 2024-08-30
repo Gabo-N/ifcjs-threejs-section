@@ -39,6 +39,8 @@ import GUI from 'three/examples/jsm/libs/lil-gui.module.min.js';
 import gsap from 'gsap';
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
 
+import {CSS2DRenderer, CSS2DObject} from 'three/examples/jsm/renderers/CSS2DRenderer.js';
+
 // 1 The scene
 const scene = new Scene();
 const canvas = document.getElementById('three-canvas');
@@ -54,16 +56,22 @@ scene.add(grid);
 
 // 2 The objects
 
-const material = new MeshLambertMaterial({color: 'orange'});
-const geometry = new BoxGeometry();
-const cubeMesh = new Mesh(geometry, material);
-scene.add(cubeMesh);
+// const material = new MeshLambertMaterial({color: 'orange'});
+// const geometry = new BoxGeometry();
+// const cubeMesh = new Mesh(geometry, material);
+// scene.add(cubeMesh);
 
-const cubeMesh2 = new Mesh(geometry, material);
-cubeMesh2.position.x +=2;
-scene.add(cubeMesh2);
+// const cubeMesh2 = new Mesh(geometry, material);
+// cubeMesh2.position.x +=2;
+// scene.add(cubeMesh2);
 
-const cubes = [cubeMesh, cubeMesh2];
+// const cubes = [cubeMesh, cubeMesh2];
+
+const label = document.createElement('h1');
+label.textContent = 'Hello World!'
+const labelObject = new CSS2DObject(label);
+scene.add(labelObject);
+
 
 // const loader = new GLTFLoader();
 
@@ -103,6 +111,13 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
 renderer.setClearColor(0x333333, 1);
 
+const labelRenderer = new CSS2DRenderer;
+labelRenderer.setSize(canvas.clientWidth, canvas.clientHeight);
+labelRenderer.domElement.style.position = 'absolute';
+labelRenderer.domElement.style.pointerEvents = 'none';
+labelRenderer.domElement.style.top = '0';
+document.body.appendChild(labelRenderer.domElement);
+
 // 5 Lights
 
 const light1 = new DirectionalLight();
@@ -118,6 +133,7 @@ window.addEventListener('resize', () => {
     camera.aspect = canvas.clientWidth / canvas.clientHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+    labelRenderer.setSize(canvas.clientWidth, canvas.clientHeight);
 });
 
 // 7 Controls
@@ -150,79 +166,80 @@ cameraControls.setLookAt(3, 4, 2, 0, 0, 0);
 
 // 8 Picking
 
-const raycaster = new Raycaster();
-const mouse = new Vector2();
-const previousSelection = {
-    geometry: null,
-    material: null
-}
+// const raycaster = new Raycaster();
+// const mouse = new Vector2();
+// const previousSelection = {
+//     geometry: null,
+//     material: null
+// }
 
-const highlightMaterial = new MeshBasicMaterial({color: 'red'});
+// const highlightMaterial = new MeshBasicMaterial({color: 'red'});
 
-window.addEventListener('mousemove', (event) => {
+// window.addEventListener('mousemove', (event) => {
 
-    getMousePosition(event);
+//     getMousePosition(event);
     
-    raycaster.setFromCamera(mouse,camera);
-    const intersections = raycaster.intersectObjects(cubes);
-    console.log(intersections);
+//     raycaster.setFromCamera(mouse,camera);
+//     const intersections = raycaster.intersectObjects(cubes);
+//     console.log(intersections);
     
     
-    if(hasNotCollisions(intersections)) {
-        restorePreviousSelection();     
-        return;
-    };
+//     if(hasNotCollisions(intersections)) {
+//         restorePreviousSelection();     
+//         return;
+//     };
     
-    const foundItem = intersections[0];
+//     const foundItem = intersections[0];
     
-    if(isPreviousSelection(foundItem)) return;
+//     if(isPreviousSelection(foundItem)) return;
     
-    restorePreviousSelection();    
-    savePreviousSelection(foundItem);    
-    highlightItem(foundItem);
-})
+//     restorePreviousSelection();    
+//     savePreviousSelection(foundItem);    
+//     highlightItem(foundItem);
+// })
 
-function getMousePosition(event) {
-    mouse.x = event.clientX / canvas.clientWidth *2 - 1;
-    mouse.y = -(event.clientY / canvas.clientHeight) *2 + 1;
-}
+// function getMousePosition(event) {
+//     mouse.x = event.clientX / canvas.clientWidth *2 - 1;
+//     mouse.y = -(event.clientY / canvas.clientHeight) *2 + 1;
+// }
 
-function hasNotCollisions(intersections) {
-    return intersections.length ===0;
-}
+// function hasNotCollisions(intersections) {
+//     return intersections.length ===0;
+// }
 
-function highlightItem(item){
-    item.object.material = highlightMaterial;
-}
+// function highlightItem(item){
+//     item.object.material = highlightMaterial;
+// }
 
-function isPreviousSelection(item) {
-    return previousSelection.mesh === item.object;
-}
+// function isPreviousSelection(item) {
+//     return previousSelection.mesh === item.object;
+// }
 
-function savePreviousSelection(item) {
-    previousSelection.mesh = item.object;
-    previousSelection.material = item.object.material;
-}
+// function savePreviousSelection(item) {
+//     previousSelection.mesh = item.object;
+//     previousSelection.material = item.object.material;
+// }
     
-function restorePreviousSelection() {
-    if(previousSelection.mesh) {
-        previousSelection.mesh.material = previousSelection.material;
-        previousSelection.mesh = null;
-        previousSelection.material = null;
-    }
-}
+// function restorePreviousSelection() {
+//     if(previousSelection.mesh) {
+//         previousSelection.mesh.material = previousSelection.material;
+//         previousSelection.mesh = null;
+//         previousSelection.material = null;
+//     }
+// }
 
 // 9 Animation
 
 function animate() {
     const delta = clock.getDelta();
-	cameraControls.update( delta );
+	cameraControls.update(delta);
     
     // sunMesh.rotation.y += .01;
     // earthMesh.rotation.y += .05;
     // sunPoints.rotation .y += .01;
     
-	renderer.render( scene, camera );
+	renderer.render(scene, camera);
+    labelRenderer.render(scene, camera);
     requestAnimationFrame(animate);
 }
 

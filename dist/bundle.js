@@ -30800,116 +30800,6 @@ class LineSegments extends Line {
 
 }
 
-class MeshLambertMaterial extends Material {
-
-	constructor( parameters ) {
-
-		super();
-
-		this.isMeshLambertMaterial = true;
-
-		this.type = 'MeshLambertMaterial';
-
-		this.color = new Color( 0xffffff ); // diffuse
-
-		this.map = null;
-
-		this.lightMap = null;
-		this.lightMapIntensity = 1.0;
-
-		this.aoMap = null;
-		this.aoMapIntensity = 1.0;
-
-		this.emissive = new Color( 0x000000 );
-		this.emissiveIntensity = 1.0;
-		this.emissiveMap = null;
-
-		this.bumpMap = null;
-		this.bumpScale = 1;
-
-		this.normalMap = null;
-		this.normalMapType = TangentSpaceNormalMap;
-		this.normalScale = new Vector2( 1, 1 );
-
-		this.displacementMap = null;
-		this.displacementScale = 1;
-		this.displacementBias = 0;
-
-		this.specularMap = null;
-
-		this.alphaMap = null;
-
-		this.envMap = null;
-		this.combine = MultiplyOperation;
-		this.reflectivity = 1;
-		this.refractionRatio = 0.98;
-
-		this.wireframe = false;
-		this.wireframeLinewidth = 1;
-		this.wireframeLinecap = 'round';
-		this.wireframeLinejoin = 'round';
-
-		this.flatShading = false;
-
-		this.fog = true;
-
-		this.setValues( parameters );
-
-	}
-
-	copy( source ) {
-
-		super.copy( source );
-
-		this.color.copy( source.color );
-
-		this.map = source.map;
-
-		this.lightMap = source.lightMap;
-		this.lightMapIntensity = source.lightMapIntensity;
-
-		this.aoMap = source.aoMap;
-		this.aoMapIntensity = source.aoMapIntensity;
-
-		this.emissive.copy( source.emissive );
-		this.emissiveMap = source.emissiveMap;
-		this.emissiveIntensity = source.emissiveIntensity;
-
-		this.bumpMap = source.bumpMap;
-		this.bumpScale = source.bumpScale;
-
-		this.normalMap = source.normalMap;
-		this.normalMapType = source.normalMapType;
-		this.normalScale.copy( source.normalScale );
-
-		this.displacementMap = source.displacementMap;
-		this.displacementScale = source.displacementScale;
-		this.displacementBias = source.displacementBias;
-
-		this.specularMap = source.specularMap;
-
-		this.alphaMap = source.alphaMap;
-
-		this.envMap = source.envMap;
-		this.combine = source.combine;
-		this.reflectivity = source.reflectivity;
-		this.refractionRatio = source.refractionRatio;
-
-		this.wireframe = source.wireframe;
-		this.wireframeLinewidth = source.wireframeLinewidth;
-		this.wireframeLinecap = source.wireframeLinecap;
-		this.wireframeLinejoin = source.wireframeLinejoin;
-
-		this.flatShading = source.flatShading;
-
-		this.fog = source.fog;
-
-		return this;
-
-	}
-
-}
-
 class Light extends Object3D {
 
 	constructor( color, intensity = 1 ) {
@@ -31805,10 +31695,10 @@ class EventDispatcher {
     }
 }
 
-var _a;
+var _a$1;
 const VERSION = '2.8.3'; // will be replaced with `version` in package.json during the build process.
 const TOUCH_DOLLY_FACTOR = 1 / 8;
-const isMac = /Mac/.test((_a = globalThis === null || globalThis === void 0 ? void 0 : globalThis.navigator) === null || _a === void 0 ? void 0 : _a.platform);
+const isMac = /Mac/.test((_a$1 = globalThis === null || globalThis === void 0 ? void 0 : globalThis.navigator) === null || _a$1 === void 0 ? void 0 : _a$1.platform);
 let THREE;
 let _ORIGIN;
 let _AXIS_Y;
@@ -34070,6 +33960,213 @@ class CameraControls extends EventDispatcher {
     }
 }
 
+class CSS2DObject extends Object3D {
+
+	constructor( element = document.createElement( 'div' ) ) {
+
+		super();
+
+		this.isCSS2DObject = true;
+
+		this.element = element;
+
+		this.element.style.position = 'absolute';
+		this.element.style.userSelect = 'none';
+
+		this.element.setAttribute( 'draggable', false );
+
+		this.center = new Vector2( 0.5, 0.5 ); // ( 0, 0 ) is the lower left; ( 1, 1 ) is the top right
+
+		this.addEventListener( 'removed', function () {
+
+			this.traverse( function ( object ) {
+
+				if ( object.element instanceof Element && object.element.parentNode !== null ) {
+
+					object.element.parentNode.removeChild( object.element );
+
+				}
+
+			} );
+
+		} );
+
+	}
+
+	copy( source, recursive ) {
+
+		super.copy( source, recursive );
+
+		this.element = source.element.cloneNode( true );
+
+		this.center = source.center;
+
+		return this;
+
+	}
+
+}
+
+//
+
+const _vector = new Vector3();
+const _viewMatrix = new Matrix4();
+const _viewProjectionMatrix = new Matrix4();
+const _a = new Vector3();
+const _b = new Vector3();
+
+class CSS2DRenderer {
+
+	constructor( parameters = {} ) {
+
+		const _this = this;
+
+		let _width, _height;
+		let _widthHalf, _heightHalf;
+
+		const cache = {
+			objects: new WeakMap()
+		};
+
+		const domElement = parameters.element !== undefined ? parameters.element : document.createElement( 'div' );
+
+		domElement.style.overflow = 'hidden';
+
+		this.domElement = domElement;
+
+		this.getSize = function () {
+
+			return {
+				width: _width,
+				height: _height
+			};
+
+		};
+
+		this.render = function ( scene, camera ) {
+
+			if ( scene.matrixWorldAutoUpdate === true ) scene.updateMatrixWorld();
+			if ( camera.parent === null && camera.matrixWorldAutoUpdate === true ) camera.updateMatrixWorld();
+
+			_viewMatrix.copy( camera.matrixWorldInverse );
+			_viewProjectionMatrix.multiplyMatrices( camera.projectionMatrix, _viewMatrix );
+
+			renderObject( scene, scene, camera );
+			zOrder( scene );
+
+		};
+
+		this.setSize = function ( width, height ) {
+
+			_width = width;
+			_height = height;
+
+			_widthHalf = _width / 2;
+			_heightHalf = _height / 2;
+
+			domElement.style.width = width + 'px';
+			domElement.style.height = height + 'px';
+
+		};
+
+		function renderObject( object, scene, camera ) {
+
+			if ( object.isCSS2DObject ) {
+
+				_vector.setFromMatrixPosition( object.matrixWorld );
+				_vector.applyMatrix4( _viewProjectionMatrix );
+
+				const visible = ( object.visible === true ) && ( _vector.z >= - 1 && _vector.z <= 1 ) && ( object.layers.test( camera.layers ) === true );
+				object.element.style.display = ( visible === true ) ? '' : 'none';
+
+				if ( visible === true ) {
+
+					object.onBeforeRender( _this, scene, camera );
+
+					const element = object.element;
+
+					element.style.transform = 'translate(' + ( - 100 * object.center.x ) + '%,' + ( - 100 * object.center.y ) + '%)' + 'translate(' + ( _vector.x * _widthHalf + _widthHalf ) + 'px,' + ( - _vector.y * _heightHalf + _heightHalf ) + 'px)';
+
+					if ( element.parentNode !== domElement ) {
+
+						domElement.appendChild( element );
+
+					}
+
+					object.onAfterRender( _this, scene, camera );
+
+				}
+
+				const objectData = {
+					distanceToCameraSquared: getDistanceToSquared( camera, object )
+				};
+
+				cache.objects.set( object, objectData );
+
+			}
+
+			for ( let i = 0, l = object.children.length; i < l; i ++ ) {
+
+				renderObject( object.children[ i ], scene, camera );
+
+			}
+
+		}
+
+		function getDistanceToSquared( object1, object2 ) {
+
+			_a.setFromMatrixPosition( object1.matrixWorld );
+			_b.setFromMatrixPosition( object2.matrixWorld );
+
+			return _a.distanceToSquared( _b );
+
+		}
+
+		function filterAndFlatten( scene ) {
+
+			const result = [];
+
+			scene.traverse( function ( object ) {
+
+				if ( object.isCSS2DObject ) result.push( object );
+
+			} );
+
+			return result;
+
+		}
+
+		function zOrder( scene ) {
+
+			const sorted = filterAndFlatten( scene ).sort( function ( a, b ) {
+
+				if ( a.renderOrder !== b.renderOrder ) {
+
+					return b.renderOrder - a.renderOrder;
+
+				}
+
+				const distanceA = cache.objects.get( a ).distanceToCameraSquared;
+				const distanceB = cache.objects.get( b ).distanceToCameraSquared;
+
+				return distanceA - distanceB;
+
+			} );
+
+			const zMax = sorted.length;
+
+			for ( let i = 0, l = sorted.length; i < l; i ++ ) {
+
+				sorted[ i ].element.style.zIndex = zMax - i;
+
+			}
+
+		}
+
+	}
+
+}
+
 // 1 The scene
 const scene = new Scene();
 const canvas = document.getElementById('three-canvas');
@@ -34085,16 +34182,22 @@ scene.add(grid);
 
 // 2 The objects
 
-const material = new MeshLambertMaterial({color: 'orange'});
-const geometry = new BoxGeometry();
-const cubeMesh = new Mesh(geometry, material);
-scene.add(cubeMesh);
+// const material = new MeshLambertMaterial({color: 'orange'});
+// const geometry = new BoxGeometry();
+// const cubeMesh = new Mesh(geometry, material);
+// scene.add(cubeMesh);
 
-const cubeMesh2 = new Mesh(geometry, material);
-cubeMesh2.position.x +=2;
-scene.add(cubeMesh2);
+// const cubeMesh2 = new Mesh(geometry, material);
+// cubeMesh2.position.x +=2;
+// scene.add(cubeMesh2);
 
-const cubes = [cubeMesh, cubeMesh2];
+// const cubes = [cubeMesh, cubeMesh2];
+
+const label = document.createElement('h1');
+label.textContent = 'Hello World!';
+const labelObject = new CSS2DObject(label);
+scene.add(labelObject);
+
 
 // const loader = new GLTFLoader();
 
@@ -34134,6 +34237,13 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
 renderer.setClearColor(0x333333, 1);
 
+const labelRenderer = new CSS2DRenderer;
+labelRenderer.setSize(canvas.clientWidth, canvas.clientHeight);
+labelRenderer.domElement.style.position = 'absolute';
+labelRenderer.domElement.style.pointerEvents = 'none';
+labelRenderer.domElement.style.top = '0';
+document.body.appendChild(labelRenderer.domElement);
+
 // 5 Lights
 
 const light1 = new DirectionalLight();
@@ -34149,6 +34259,7 @@ window.addEventListener('resize', () => {
     camera.aspect = canvas.clientWidth / canvas.clientHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+    labelRenderer.setSize(canvas.clientWidth, canvas.clientHeight);
 });
 
 // 7 Controls
@@ -34181,78 +34292,80 @@ cameraControls.setLookAt(3, 4, 2, 0, 0, 0);
 
 // 8 Picking
 
-const raycaster = new Raycaster();
-const mouse = new Vector2();
-const previousSelection = {
-    geometry: null,
-    material: null
-};
+// const raycaster = new Raycaster();
+// const mouse = new Vector2();
+// const previousSelection = {
+//     geometry: null,
+//     material: null
+// }
 
-const highlightMaterial = new MeshBasicMaterial({color: 'red'});
+// const highlightMaterial = new MeshBasicMaterial({color: 'red'});
 
-window.addEventListener('mousemove', (event) => {
+// window.addEventListener('mousemove', (event) => {
 
-    getMousePosition(event);
+//     getMousePosition(event);
     
-    raycaster.setFromCamera(mouse,camera);
-    const intersections = raycaster.intersectObjects(cubes);
-    console.log(intersections);
+//     raycaster.setFromCamera(mouse,camera);
+//     const intersections = raycaster.intersectObjects(cubes);
+//     console.log(intersections);
     
     
-    if(hasNotCollisions(intersections)) {
-        restorePreviousSelection();     
-        return;
-    }    
-    const foundItem = intersections[0];
+//     if(hasNotCollisions(intersections)) {
+//         restorePreviousSelection();     
+//         return;
+//     };
     
-    if(isPreviousSelection(foundItem)) return;
+//     const foundItem = intersections[0];
     
-    restorePreviousSelection();    
-    savePreviousSelection(foundItem);    
-    highlightItem(foundItem);
-});
-
-function getMousePosition(event) {
-    mouse.x = event.clientX / canvas.clientWidth *2 - 1;
-    mouse.y = -(event.clientY / canvas.clientHeight) *2 + 1;
-}
-
-function hasNotCollisions(intersections) {
-    return intersections.length ===0;
-}
-
-function highlightItem(item){
-    item.object.material = highlightMaterial;
-}
-
-function isPreviousSelection(item) {
-    return previousSelection.mesh === item.object;
-}
-
-function savePreviousSelection(item) {
-    previousSelection.mesh = item.object;
-    previousSelection.material = item.object.material;
-}
+//     if(isPreviousSelection(foundItem)) return;
     
-function restorePreviousSelection() {
-    if(previousSelection.mesh) {
-        previousSelection.mesh.material = previousSelection.material;
-        previousSelection.mesh = null;
-        previousSelection.material = null;
-    }
-}
+//     restorePreviousSelection();    
+//     savePreviousSelection(foundItem);    
+//     highlightItem(foundItem);
+// })
+
+// function getMousePosition(event) {
+//     mouse.x = event.clientX / canvas.clientWidth *2 - 1;
+//     mouse.y = -(event.clientY / canvas.clientHeight) *2 + 1;
+// }
+
+// function hasNotCollisions(intersections) {
+//     return intersections.length ===0;
+// }
+
+// function highlightItem(item){
+//     item.object.material = highlightMaterial;
+// }
+
+// function isPreviousSelection(item) {
+//     return previousSelection.mesh === item.object;
+// }
+
+// function savePreviousSelection(item) {
+//     previousSelection.mesh = item.object;
+//     previousSelection.material = item.object.material;
+// }
+    
+// function restorePreviousSelection() {
+//     if(previousSelection.mesh) {
+//         previousSelection.mesh.material = previousSelection.material;
+//         previousSelection.mesh = null;
+//         previousSelection.material = null;
+//     }
+// }
 
 // 9 Animation
 
 function animate() {
     const delta = clock.getDelta();
-	cameraControls.update( delta );
+	cameraControls.update(delta);
     
     // sunMesh.rotation.y += .01;
     // earthMesh.rotation.y += .05;
     // sunPoints.rotation .y += .01;
     
-	renderer.render( scene, camera );
+	renderer.render(scene, camera);
+    labelRenderer.render(scene, camera);
     requestAnimationFrame(animate);
 }
 
