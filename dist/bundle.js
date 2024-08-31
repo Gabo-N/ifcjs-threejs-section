@@ -43910,6 +43910,53 @@ function addPrimitiveAttributes( geometry, primitiveDef, parser ) {
 
 }
 
+class CSS2DObject extends Object3D {
+
+	constructor( element = document.createElement( 'div' ) ) {
+
+		super();
+
+		this.isCSS2DObject = true;
+
+		this.element = element;
+
+		this.element.style.position = 'absolute';
+		this.element.style.userSelect = 'none';
+
+		this.element.setAttribute( 'draggable', false );
+
+		this.center = new Vector2( 0.5, 0.5 ); // ( 0, 0 ) is the lower left; ( 1, 1 ) is the top right
+
+		this.addEventListener( 'removed', function () {
+
+			this.traverse( function ( object ) {
+
+				if ( object.element instanceof Element && object.element.parentNode !== null ) {
+
+					object.element.parentNode.removeChild( object.element );
+
+				}
+
+			} );
+
+		} );
+
+	}
+
+	copy( source, recursive ) {
+
+		super.copy( source, recursive );
+
+		this.element = source.element.cloneNode( true );
+
+		this.center = source.center;
+
+		return this;
+
+	}
+
+}
+
 //
 
 const _vector = new Vector3();
@@ -44270,8 +44317,20 @@ window.addEventListener('dblclick', (event) => {
     // console.log(intersections);
 
     if (!intersections.length) return;
-    const found = intersections[0];
-    console.log(found);
+    // const found = intersections[0];
+    // console.log(found);
+
+    const collisionLocation = intersections[0].point;
+
+    const message = window.prompt('Write the label text:');
+
+    const label = document.createElement('p');
+    label.textContent = message;
+    label.classList.add('label');
+
+    const labelObject = new CSS2DObject(label);
+    labelObject.position.copy(collisionLocation);
+    scene.add(labelObject);
 });
  
 // 9 Animation

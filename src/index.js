@@ -241,8 +241,20 @@ window.addEventListener('dblclick', (event) => {
     // console.log(intersections);
 
     if (!intersections.length) return;
-    const found = intersections[0];
-    console.log(found);
+    // const found = intersections[0];
+    // console.log(found);
+
+    const collisionLocation = intersections[0].point;
+
+    const message = window.prompt('Write the label text:')
+
+    const label = document.createElement('p');
+    label.textContent = message;
+    label.classList.add('label');
+
+    const labelObject = new CSS2DObject(label);
+    labelObject.position.copy(collisionLocation);
+    scene.add(labelObject);
 })
  
 // 9 Animation

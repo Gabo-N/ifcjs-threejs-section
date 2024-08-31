@@ -27,8 +27,12 @@
     visibility: collapse;
 }
 
-.red-background {
-    background-color: red;
+.label {
+    background-color: rgba(255, 255, 255, 0.6);
+    padding: 8px;
+    backdrop-filter: blur(8px);
+    border-radius: 1rem;
+    pointer-events: all;
 }
 
 /* From uiverse.io by @barisdogansutcu */
