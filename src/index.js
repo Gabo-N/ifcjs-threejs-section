@@ -67,43 +67,49 @@ scene.add(grid);
 
 // const cubes = [cubeMesh, cubeMesh2];
 
-const label = document.createElement('h1');
-label.textContent = 'Hello World!'
-const labelObject = new CSS2DObject(label);
-scene.add(labelObject);
+// const label = document.createElement('h1');
+// label.textContent = 'Hello World!'
+// label.classList.add('red-background');
+// const labelObject = new CSS2DObject(label);
+// scene.add(labelObject);
 
 
-// const loader = new GLTFLoader();
+const loader = new GLTFLoader();
 
-// const loadingElem = document.querySelector('#loader-container');
-// const loadingText = loadingElem.querySelector('p');
+const loadingElem = document.querySelector('#loader-container');
+const loadingText = loadingElem.querySelector('p');
+// loadingElem.classList.add('hidden');
 
-// loader.load('../assets/police_station.glb',
+let policeStation;
 
-// 	( gltf ) => {
-//     loadingElem.style.display = 'none';
-// 		scene.add( gltf.scene );
-// 	},
+loader.load('../assets/police_station.glb',
 
-// 	( progress ) => {
-//     const current = (progress.loaded /  progress.total) * 100;
-//     const formatted = Math.trunc(current * 100) / 100; 
-//     loadingText.textContent = `Loading: ${formatted}%`;
-// 	},
+	( gltf ) => {
+        policeStation = gltf.scene
+        loadingElem.style.display = 'none';
+        // loadingElem.classList.add('hidden');
+		scene.add(policeStation);
+	},
 
-// 	( error ) => {
+	( progress ) => {
+    const current = (progress.loaded /  progress.total) * 100;
+    const formatted = Math.trunc(current * 100) / 100; 
+    loadingText.textContent = `Loading: ${formatted}%`;
+	},
 
-// 		console.log( 'An error happened: ', error );
+	( error ) => {
 
-// 	}
-// );
+		console.log( 'An error happened: ', error );
+
+	}
+);
 
 // 3 The camera
 
 const camera = new PerspectiveCamera(75, canvas.clientWidth/canvas.clientHeight);
 scene.add(camera);
-
 camera.lookAt(axes.position);
+
 
 // 4 The renderer
 const renderer = new WebGLRenderer( { canvas });
@@ -161,13 +167,12 @@ const cameraControls = new CameraControls(camera, canvas);
 
 cameraControls.dollyToCursor = true;
 
-// cameraControls.setLookAt(10, 20, 18, 0, 10, 0);
-cameraControls.setLookAt(3, 4, 2, 0, 0, 0);
+cameraControls.setLookAt(10, 10, 18, 0, 10, 0);
 
 // 8 Picking
 
-// const raycaster = new Raycaster();
-// const mouse = new Vector2();
+const raycaster = new Raycaster();
+const mouse = new Vector2();
 // const previousSelection = {
 //     geometry: null,
 //     material: null
@@ -228,6 +233,18 @@ cameraControls.setLookAt(3, 4, 2, 0, 0, 0);
 //     }
 // }
 
+window.addEventListener('dblclick', (event) => {
+    mouse.x = event.clientX / canvas.clientWidth *2 - 1;
+    mouse.y = -(event.clientY / canvas.clientHeight) *2 + 1;
+    raycaster.setFromCamera(mouse,camera);
+    const intersections = raycaster.intersectObject(policeStation);
+    // console.log(intersections);
+
+    if (!intersections.length) return;
+    const found = intersections[0];
+    console.log(found);
+})
+ 
 // 9 Animation
 
 function animate() {

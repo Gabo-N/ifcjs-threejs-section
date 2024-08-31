@@ -23,6 +23,14 @@
     color: white;
 }
 
+.hidden {
+    visibility: collapse;
+}
+
+.red-background {
+    background-color: red;
+}
+
 /* From uiverse.io by @barisdogansutcu */
 svg {
     margin: 1rem;
