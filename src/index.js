@@ -247,16 +247,35 @@ window.addEventListener('dblclick', (event) => {
     const collisionLocation = intersections[0].point;
 
     const message = window.prompt('Write the label text:')
-
+    
     const label = document.createElement('p');
     label.textContent = message;
     label.classList.add('label');
+    
+    const deleteButton = document.createElement('button');
+    deleteButton.textContent = 'X';
+    deleteButton.className = 'delete-button hidden';
+    // deleteButton.classList.add('delete-button');
+    
+    const labelContainer = document.createElement('div');
+    labelContainer.classList.add('label-container');
+    labelContainer.appendChild(deleteButton);
+    labelContainer.appendChild(label);
 
-    const labelObject = new CSS2DObject(label);
+    const labelObject = new CSS2DObject(labelContainer);
     labelObject.position.copy(collisionLocation);
     scene.add(labelObject);
+
+    deleteButton.onclick = () => {
+        labelObject.removeFromParent();
+        labelObject.element = null;
+        labelContainer.remove();
+    }
+
+    labelContainer.onmouseenter = () => deleteButton.classList.remove('hidden');
+    labelContainer.onmouseleave = () => deleteButton.classList.add('hidden');
 })
- 
+
 // 9 Animation
 
 function animate() {

@@ -27,12 +27,32 @@
     visibility: collapse;
 }
 
+.label-container {
+    pointer-events: all;
+    display: flex;
+    align-items:center;
+}
+
+.delete-button {
+    background-color: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(8px);
+    padding: 5px;
+    border-radius: 1rem;
+    border: none;
+    margin-right: 5px;
+    height: 1.5rem;
+    font-weight: bold;
+}
+
+.delete-button:hover {
+    cursor: pointer;
+}
+
 .label {
     background-color: rgba(255, 255, 255, 0.6);
     padding: 8px;
     backdrop-filter: blur(8px);
     border-radius: 1rem;
-    pointer-events: all;
 }
 
 /* From uiverse.io by @barisdogansutcu */
