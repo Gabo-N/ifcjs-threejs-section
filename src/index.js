@@ -41,6 +41,8 @@ import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 import {CSS2DRenderer, CSS2DObject} from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 
+import Stats from 'stats.js/src/Stats';
+
 // 1 The scene
 const scene = new Scene();
 const canvas = document.getElementById('three-canvas');
@@ -278,7 +280,13 @@ window.addEventListener('dblclick', (event) => {
 
 // 9 Animation
 
+const stats = new Stats();
+stats.showPanel(1); // 0: fps, 1: ms, 2: mb, 3+: custom
+document.body.appendChild(stats.dom);
+
 function animate() {
+    stats.begin();
+
     const delta = clock.getDelta();
 	cameraControls.update(delta);
     
@@ -288,6 +296,9 @@ function animate() {
     
 	renderer.render(scene, camera);
     labelRenderer.render(scene, camera);
+
+    stats.end();
+
     requestAnimationFrame(animate);
 }
 
