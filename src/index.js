@@ -43,6 +43,8 @@ import {CSS2DRenderer, CSS2DObject} from 'three/examples/jsm/renderers/CSS2DRend
 
 import Stats from 'stats.js/src/Stats';
 
+import{VRButton} from 'three/addons/webxr/VRButton.js';
+
 // 1 The scene
 const scene = new Scene();
 const canvas = document.getElementById('three-canvas');
@@ -284,23 +286,36 @@ const stats = new Stats();
 stats.showPanel(1); // 0: fps, 1: ms, 2: mb, 3+: custom
 document.body.appendChild(stats.dom);
 
-function animate() {
+const vrButton = VRButton.createButton(renderer);
+document.body.appendChild(vrButton);
+
+renderer.xr.enabled = true; // from three.js documentation not ifc.js crash course - https://threejs.org/docs/#manual/en/introduction/How-to-create-VR-content
+
+renderer.setAnimationLoop(() => {
     stats.begin();
 
     const delta = clock.getDelta();
 	cameraControls.update(delta);
     
-    // sunMesh.rotation.y += .01;
-    // earthMesh.rotation.y += .05;
-    // sunPoints.rotation .y += .01;
-    
 	renderer.render(scene, camera);
     labelRenderer.render(scene, camera);
 
     stats.end();
+})
 
-    requestAnimationFrame(animate);
-}
+// function animate() {
+//     stats.begin();
+
+//     const delta = clock.getDelta();
+// 	cameraControls.update(delta);
+    
+// 	renderer.render(scene, camera);
+//     labelRenderer.render(scene, camera);
+
+//     stats.end();
+
+//     requestAnimationFrame(animate);
+// }
 
 animate();
 
